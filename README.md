@@ -220,6 +220,7 @@ we cannot guarantee that GPU tasks will survive a rolling upgrade.
 However we make best efforts to preserve GPU tasks during an upgrade.
 
 ## Add gpushare 
+### TODO only one vgpu can be apply 
 
 ### Related Project
 [cuda-wrapper](https://github.com/ruanxingbaozi/cuda-wrapper)
