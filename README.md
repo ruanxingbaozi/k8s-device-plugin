@@ -218,3 +218,14 @@ see GPUs re-registering themselves after your node comes back online.
 Upgrading the device plugin is a more complex task. It is recommended to drain GPU tasks as
 we cannot guarantee that GPU tasks will survive a rolling upgrade.
 However we make best efforts to preserve GPU tasks during an upgrade.
+
+## Add gpushare 
+
+### Related Project
+[cuda-wrapper](https://github.com/ruanxingbaozi/cuda-wrapper)
+[pod-gpu-metrics-exporter](https://github.com/ruanxingbaozi/pod-gpu-metrics-exporter)
+
+
+### Optional Project
+[gpushare-device-plugin](https://github.com/AliyunContainerService/gpushare-device-plugin)
+[gpushare-scheduler-extender](https://github.com/AliyunContainerService/gpushare-scheduler-extender)
