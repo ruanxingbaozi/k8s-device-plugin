@@ -194,9 +194,18 @@ func (m *NvidiaDevicePlugin) Allocate(ctx context.Context, reqs *pluginapi.Alloc
 	devs := m.devs
 	responses := pluginapi.AllocateResponse{}
 	for _, req := range reqs.ContainerRequests {
+		visibleDevice := make(map[string]int)
+		var sVisibleDevice string
+		for _, v := range req.DevicesIDs {
+			trueUUID := getTrueUUID(v)
+			if _, found := visibleDevice[trueUUID]; !found {
+				visibleDevice[trueUUID] = 0
+				sVisibleDevice += fmt.Sprintf("%s,", trueUUID)
+			}
+		}
 		response := pluginapi.ContainerAllocateResponse{
 			Envs: map[string]string{
-				"NVIDIA_VISIBLE_DEVICES": strings.Join(req.DevicesIDs, ","),
+				"NVIDIA_VISIBLE_DEVICES": sVisibleDevice,
 			},
 		}
 

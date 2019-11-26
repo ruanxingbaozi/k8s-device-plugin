@@ -17,6 +17,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"strings"
 
@@ -25,6 +26,8 @@ import (
 	"golang.org/x/net/context"
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 )
+
+const VGPUMemGB = 2
 
 func check(err error) {
 	if err != nil {
@@ -40,21 +43,23 @@ func getDevices() []*pluginapi.Device {
 	for i := uint(0); i < n; i++ {
 		d, err := nvml.NewDeviceLite(i)
 		check(err)
-
-		dev := pluginapi.Device{
-			ID:		d.UUID,
-			Health:	pluginapi.Healthy,
-		}
-		if d.CPUAffinity != nil {
-			dev.Topology = &pluginapi.TopologyInfo{
-				Nodes: []*pluginapi.NUMANode{
-					&pluginapi.NUMANode{
-						ID: int64(*(d.CPUAffinity)),
-					},
-				},
+		num := *d.Memory / 1024 / VGPUMemGB
+		for j := uint64(0); j < num; j++ {
+			dev := pluginapi.Device{
+				ID:     genVirtualUUID(d.UUID, j),
+				Health: pluginapi.Healthy,
 			}
+			if d.CPUAffinity != nil {
+				dev.Topology = &pluginapi.TopologyInfo{
+					Nodes: []*pluginapi.NUMANode{
+						&pluginapi.NUMANode{
+							ID: int64(*(d.CPUAffinity)),
+						},
+					},
+				}
+			}
+			devs = append(devs, &dev)
 		}
-		devs = append(devs, &dev)
 	}
 
 	return devs
@@ -67,6 +72,14 @@ func deviceExists(devs []*pluginapi.Device, id string) bool {
 		}
 	}
 	return false
+}
+
+func genVirtualUUID(uuid string, index uint64) string {
+	return fmt.Sprintf("%s_%v", uuid, index)
+}
+
+func getTrueUUID(uuid string) string {
+	return strings.Split(uuid, "_")[0]
 }
 
 func watchXIDs(ctx context.Context, devs []*pluginapi.Device, xids chan<- *pluginapi.Device) {
@@ -116,7 +129,7 @@ func watchXIDs(ctx context.Context, devs []*pluginapi.Device, xids chan<- *plugi
 		}
 
 		for _, d := range devs {
-			if d.ID == *e.UUID {
+			if getTrueUUID(d.ID) == *e.UUID {
 				log.Printf("XidCriticalError: Xid=%d on GPU=%s, the device will go unhealthy.", e.Edata, d.ID)
 				xids <- d
 			}
