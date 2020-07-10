@@ -75,7 +75,7 @@ func (g *GpuDeviceManager) Devices() []*Device {
 
 	var devs []*Device
 	for i := uint(0); i < n; i++ {
-		d, err := nvml.NewDeviceLite(i)
+		d, err := nvml.NewDevice(i)
 		check(err)
 
 		migEnabled, err := d.IsMigEnabled()
@@ -85,7 +85,7 @@ func (g *GpuDeviceManager) Devices() []*Device {
 			continue
 		}
 
-		devs = append(devs, buildDevice(d))
+		devs = append(devs, buildDevices(d, *vgpuMem)...)
 	}
 
 	return devs
@@ -97,7 +97,7 @@ func (m *MigDeviceManager) Devices() []*Device {
 
 	var devs []*Device
 	for i := uint(0); i < n; i++ {
-		d, err := nvml.NewDeviceLite(i)
+		d, err := nvml.NewDevice(i)
 		check(err)
 
 		migEnabled, err := d.IsMigEnabled()
@@ -153,7 +153,7 @@ func getTrueUUID(uuid string) string {
 	return strings.Split(uuid, "_")[0]
 }
 func buildDevices(d *nvml.Device, vgpuMem int) []*Device {
-	num := *d.Memory / 1024 / uint64(vgpuMem)
+	num := *d.Memory / 1000 / uint64(vgpuMem)
 	devs := []*Device{}
 	for i := uint64(0); i < num; i++ {
 		dev := Device{}
@@ -171,7 +171,6 @@ func buildDevices(d *nvml.Device, vgpuMem int) []*Device {
 		}
 		devs = append(devs, &dev)
 	}
-
 	return devs
 }
 
@@ -192,9 +191,8 @@ func checkHealth(stop <-chan interface{}, devices []*Device, unhealthy chan<- *D
 		trueUUID := getTrueUUID(d.ID)
 		gpu, _, _, err := nvml.ParseMigDeviceUUID(trueUUID)
 		if err != nil {
-			gpu = d.ID
+			gpu = trueUUID
 		}
-
 		err = nvml.RegisterEventForDevice(eventSet, nvml.XidCriticalError, gpu)
 		if err != nil && strings.HasSuffix(err.Error(), "Not Supported") {
 			log.Printf("Warning: %s is too old to support healthchecking: %s. Marking it unhealthy.", d.ID, err)

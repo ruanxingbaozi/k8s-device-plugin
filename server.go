@@ -231,7 +231,7 @@ func (m *NvidiaDevicePlugin) Allocate(ctx context.Context, reqs *pluginapi.Alloc
 		response := pluginapi.ContainerAllocateResponse{
 			Envs: map[string]string{
 				m.allocateEnvvar:     strings.Join(visibleDevices, ","),
-				"WRAPPER_MAX_MEMORY": string(*vgpuMem * len(req.DevicesIDs) * 1024 * 1024 * 1024),
+				"WRAPPER_MAX_MEMORY": fmt.Sprintf("%v",*vgpuMem * len(req.DevicesIDs) * 1024 * 1024 * 1024),
 			},
 		}
 		if *passDeviceSpecs {
